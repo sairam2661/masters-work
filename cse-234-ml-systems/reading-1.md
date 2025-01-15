@@ -203,3 +203,158 @@ RNNs are feedforward neural networks that use recurrent connections to process s
 ht = f(Whhh(t-1) + Wxhx(t) + b)
 
 where ht is the hidden state at time t, Whh is the recurrent weight matrix, Wxh is the input weight matrix, x(t) is the input at time t, f is the activation function and b is the bias vector.
+
+### Computational Patterns
+
+1. Recurrent computation - The core operation in RNNs is recurrent computation. This operation is used to update the hidden state at each time step.
+
+### System Implications
+
+- Memory requirements - We need to consider the recurrent weight matrix, the input weight matrix and the hidden state. The recurrent weight matrix and the input weight matrix are stored in memory and must be accessed during recurrent computation. The hidden state is generated at each time step and must be stored in memory. We can optimize memory requirements through weight reuse and hidden state management.
+- Computation characteristics - The core operation in RNNs is recurrent computation which has a sequential nature. This operation is compute-bound and requires high arithmetic intensity. We can optimize computation characteristics through pipelining, batching, sequence packing, etc.
+- Data movement - The data movement in RNNs is dominated by the movement of weight matrices and hidden states. The weight matrices are large and must be transferred between memory hierarchy levels. We can optimize data movement through data reuse and minimizing redundant hidden state accesses.
+
+## Attention Mechanisms - Dynamic Pattern Processing
+
+The previous architectures process patters in fixed ways. However, many AI applications require dynamic pattern processing. In language translation, for example, the model must focus on different parts of the input sentence at different times.
+
+## Basic Attention Mechanism
+
+### Algorithmic Structure
+
+Attention mechanisms are used to dynamically focus on different parts of the input data. This can be represented by,
+
+Attention(Q, K, V) = softmax(QK^T / √d) V
+
+where Q, K and V are the query, key and value matrices, respectively. The attention mechanism computes a set of attention scores by comparing the query and key matrices.
+
+### Computational Patterns
+
+1. Attention computation - The core operation in attention mechanisms is attention computation. This operation is used to compute attention scores based on the query and key matrices.
+2. Attention aggregation - The attention scores are used to aggregate the value matrix to produce the output.
+
+### System Implications
+
+- Memory requirements - We need to consider the query, key and value matrices. These matrices are stored in memory and must be accessed during attention computation. The intermediate attention weights becomes a significant memory requirement.
+- Computation characteristics - Deal with two main phases: generating attention weights and applying them to values. This has a quadratic scaling with the sequence length.
+- Data movement - The data movement in attention mechanisms is dominated by the movement of query, key and value matrices. These matrices are large and must be transferred between memory hierarchy levels.
+
+These distinctive characteristics set up of the stage of more advanced architectures like Transformers.
+
+## Transformers and Self-Attention
+
+Key innovation is the use of self-attention layers.
+
+### Algorithmic Structure
+
+In this, the queries, keys and values are all derived from the same input. They also employ a multi-head attention which provides the model with a richer representation of the input data, enabling it to capture different types of relationships. The self attention mechanism can be represented by,
+
+SelfAttention(Q, K, V) = softmax(XWQ(XWK)^T / √d) XWV
+
+where X is the input data, WQ, WK and WV are the query, key and value weight matrices, respectively. The self attention mechanism computes a set of attention scores by comparing the input data.
+
+### Computational Patterns
+
+1. Self-attention computation - The core operation in transformers is self-attention computation. This operation is used to compute attention scores based on the input data.
+2. Multi-head attention - The self-attention mechanism is applied multiple times in parallel to capture different types of relationships.
+
+### System Implications
+
+- self-attention enables parallel processing; more efficient computation
+- attention score computation results in a quadratic scaling with the sequence length; computational bottleneck
+- multi-head attention introduces additional computation and memory requirements; but enhances model's representational capacity
+- involves large matrix multiplications; requires high arithmetic intensity
+- self-attention also generates memory-internsive intermediate results; requires careful memory management
+
+## Evolution of Deep Learning Architectures
+
+| Era               | Dominant Architecture | Key Primitives             | System Focus                                 |
+| ----------------- | --------------------- | -------------------------- | -------------------------------------------- |
+| Early NN          | MLP                   | Dense Matrix Ops           | CPU optimization                             |
+| CNN Revolution    | CNN                   | Convolutions               | GPU acceleration                             |
+| Sequence Modeling | RNN                   | Sequential Ops             | Memory hierarchies                           |
+| Attention Era     | Transformer           | Attention, Dynamic Compute | Flexible accelerators, High-bandwidth memory |
+
+Key innovations during the following phases were,
+
+- Perceptron to Multi-Layer Networks (layer stacking, non-linear transformations, feedforward computation, gradient-based learning, etc.)
+- Dense to Spatial Processing (dense connectivity, skip connections, batch normalization, parameter sharing, etc.)
+- Evolution of Sequence Processing (adaptive computation paths, attention mechanisms, etc.)
+- Modern AI Architectures (innovate through clever use and refinement of existing primitives)
+
+| Primitive Type | MLP                   | CNN                        | RNN                         | Transformer              |
+| -------------- | --------------------- | -------------------------- | --------------------------- | ------------------------ |
+| Computational  | Matrix Multiplication | Convolution (Matrix Mult.) | Matrix Mult. + State Update | Matrix Mult. + Attention |
+| Memory Access  | Sequential            | Strided                    | Sequential + Random         | Random (Attention)       |
+| Data Movement  | Broadcast             | Sliding Window             | Sequential                  | Broadcast + Gather       |
+
+## System-Level Building Blocks
+
+### Core Computational Primitives
+
+- Matrix multiplication - used in MLPs for layer computations, CCNs reshape convolutions, etc. Can be exploited using modern hardware.
+- Sliding window operations - used in CNNs for convolutional layers, etc. Can be transforming them into efficient matrix multiplications and mangaging memory hierarchy.
+- Dynamic computation - emerged with attention mechanisms in Transformers, etc. Can be optimized using specialized hardware accelerators.
+
+### Memory Access Primitives
+
+- Sequential access - used in RNNs for sequence processing, etc. Most efficient. Can be optimized using modern hardwares using prefetching, caching, etc.
+- Strided access - used in CNNs for convolutional layers, etc. Less efficient than sequential access. Can be optimized using caching sttrategies and specialized memory controllers.
+- Random access - used in Transformers for attention mechanisms, etc. Not very efficient. Can be optimized using memory hierarchy and sophisticated prefetching.
+
+| Architecture | Input Dependency | Parameter Storage | Activation Storage   | Scaling Behavior |
+| ------------ | ---------------- | ----------------- | -------------------- | ---------------- |
+| MLP          | Linear           | O(N × W)          | O(B × W)             | Predictable      |
+| CNN          | Constant         | O(K × C)          | O(B × H_img × W_img) | Efficient        |
+| RNN          | Linear           | O(h²)             | O(B × T × h)         | Challenging      |
+| Transformer  | Quadratic        | O(N × d)          | O(B × N²)            | Problematic      |
+
+Where:
+
+- **N**: Input or sequence size
+- **W**: Layer width
+- **B**: Batch size
+- **K**: Kernel size
+- **C**: Number of channels
+- **H_img**: Height of input feature map (CNN)
+- **W_img**: Width of input feature map (CNN)
+- **h**: Hidden state size (RNN)
+- **T**: Sequence length
+- **d**: Model dimensionality
+
+### Data Movement Primitives
+
+Moving data from off-chip memory typically requires 100-1000x more energy than performing a floating-point operation! Moving data is pretty important!
+
+- Broadcast - used in MLPs for weight and bias broadcasting, etc. Can be optimized using data reuse and memory hierarchy.
+- Scatter - used in CNNs for feature map generation, etc. Can be optimized using parrallelism (little challenging) and sophisticated work distribution algorithms.
+- Gather - used in Transformers for attention mechanisms, etc. Can be optimized using atttention pattern, high-bandwith interconnects, and large caches.
+- Reduction - used in all architectures for aggregation, etc. Can be optimized using tree-structured reduction networks, and parallel reduction algorithms.
+
+### System Design Impact
+
+- Specialized hardware - tensor processing units, tensor cores, etc.
+- Memory heirarchies - high-bandwith memory, complex on-chip memory with multiple levels, etc.
+
+| Primitive             | Hardware Impact           | Software Optimization    | Key Challenges             |
+| --------------------- | ------------------------- | ------------------------ | -------------------------- |
+| Matrix Multiplication | Tensor Cores              | Batching, GEMM libraries | Parallelization, precision |
+| Sliding Window        | Specialized datapaths     | Data layout optimization | Stride handling            |
+| Dynamic Computation   | Flexible routing          | Dynamic graph execution  | Load balancing             |
+| Sequential Access     | Burst mode DRAM           | Contiguous allocation    | Access latency             |
+| Random Access         | Large caches              | Memory-aware scheduling  | Cache misses               |
+| Broadcast             | Specialized interconnects | Operation fusion         | Bandwidth                  |
+| Gather/Scatter        | High-bandwidth memory     | Work distribution        | Load balancing             |
+
+### Challenges
+
+- Memory bandwith - models with large working sets or models that require frequent random access
+- Communication overhead - models with large intermediate results or models using distributed training
+- Complex trade-offs - between different primitives and their impact on system design
+
+## Conclusion
+
+- Modern AI architectures are built on a set of core computational primitives.
+- Identifying these primitives can help us understand the system-level implications of different architectures.
+- System-level building blocks can be optimized to improve the performance of AI systems.
+- Challenges remain in optimizing memory access, data movement and computation for modern AI architectures.
