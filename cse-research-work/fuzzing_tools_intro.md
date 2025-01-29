@@ -45,12 +45,14 @@
 - Enhances greybox fuzzing for structured data.
 - Utilizes LLMs’ understanding of data formats for effective mutation strategies.
 - Fine-tuned with paired mutation seeds to learn structured formats.
+- _Metric: Bug-detection rate, crash uniqueness_
 - Results: Outperformed top competitors by discovering 41 additional bugs on average and identified 47 unique bugs across trials.
 
-### Gramatron
+### Gramatron (need to read)
 
 - Restructures input grammars to allow for unbiased sampling from the input space.
 - Transforms grammars to improve coverage and bug-finding efficiency by avoiding biases in traditional grammar-based fuzzing.
+- _Metric: Logic state coverage_
 
 ### AFL++
 
@@ -59,12 +61,14 @@
   - Improved performance.
   - New mutation strategies.
   - Better support for various binary formats.
+- _Metric: Code coverage, performance metrics_
 - Results: Demonstrates significant improvements in code coverage and bug detection compared to AFL.
 
-### LibFuzzer
+### LibFuzzer (need to read)
 
 - In-process, coverage-guided, evolutionary fuzzing engine targeting library APIs.
 - Key features:
   - Directly linked with the library under test.
   - Utilizes LLVM’s SanitizerCoverage for mutation guidance.
+- _Metric: Mutation score, path explorer efficiency_
 - Results: Efficiently discovers API bugs by leveraging targeted coverage techniques.
