@@ -1,4 +1,4 @@
-# TVM
+# TVM - An Automated End-to-End Optimizing Compiler for Deep Learning
 
 - a compiler that exposes graph-level and operator-level optimizations to provide performance portability to DL workloads for diverse hardware back-ends
 - solves optimization challenges specific to deep learning
@@ -210,38 +210,155 @@
 
 - presents an end-to-end compilation stack for deep learning, automating optimization across diverse hardware back-ends and paving the way for future system software-hardware co-design advancements
 
-# Triton
+# Triton - An Intermediate Language and Compiler for Tiled Neural Network Computations
 
 - language and compiler centered around the concept of a tile, statically shaped multi-dimesnsional sub-arrays
 
 ## Introduction
 
+- there has been continous improvements in performance of core-arcitectures (like GPUS)
+- allowed researchers and engineers to explore larger models and use more data
+  - supported by vendor libraries like cuBLAS and cuDNN, brining latest hardware innovations to researchers
+  - but these libraries support a restricted set of tensor operations
+  - novel primitives need to be implemented by experts
+- for solving this, may Domain-Specific Languages (DSLs) for DNNs are being developed
+  - these systems perform well for certain classes of problems, but are still slower than the vendor libraries in practice
+
+### Key Contributions
+
+- Triton-C
+  - a C-like language for expression tensor programs as parametric tile variables
+  - provides a stable interface for existing DNN transcompilers
+- Triton-IR
+  - An LLVM-based Intermediate Representation that provides an environment suitable for tile-level program analysis, transformation and optimization
+  - constructed directly from Triton-C during parsing
+- Triton-JIT
+  - a JIT compiler and code generation backend for compiling Triton-IR programs into efficient LLVM bitcode
+- Numerical experiments
+  - evaluates ability of Tritan against cuBLAS, cuDNN and alternate DSLs
+
 ## Related Work
+
+- current DL software still rely on hand-optimized sub-routines (cuBLAS and cuDNN)
+- has led to development of various DSLs and copmilers for DNNs
+  - Tensor-level IRs - used by XLA and Glow to transform tensor programs into predefined LLVM-IR and CUDA-C operation templates
+  - Polyhedral model - used by Tensor Comprehensions and Diessel to parametrize, automate the compilation of DNN layers into LLVM-IR and CUDA-C programs
+  - Loop synthesierzs - used by Halide and TVM to transform tensor computations into loop nests that can be further manually optimized
 
 ## Triton-C Language
 
+- aim is to provide a stable frontend for existing and future DNN transcopmilers
+- be similar to low=level GPU programming for programmers
+
 ### Syntax
+
+- syntax based on ANSI C, key changes are,
+  - tile declarations - represents multi-dimensional arays (`int tile [10, 10]`) to emphasize their semantical difference with nested arrays (`int tile[10][10]`)
+  - built-in functions - to support tile semantics and the SPMD programming model
+  - broadcasting - N_dimensional tiles can be broadcast along any particular axis
+  - predication - for basic control-flow within tile operations
 
 ### Semantics
 
+- tile semantics - built-in _tile_ types and operations
+  - simplifies the structure of tensor programs by abstraction
+  - opens the door for compilers to perform automatic optimizations
+- broadcasting semantics - strongly typed, instructions statically require their operands to obey strict shape constraints
+  - a set of rules are needed to perform its conventions
+    - padding
+    - broadcast
+- programming model
+  - generally, execution of CUDE code on GPUs is supported by an SPMD programming model
+  - Triton programming model is similar, but each kernel is single-threaded and associate with global ranges that varie from instance to instance
+  - leads to simpler kernels in which CUDA-like concurrency primitives are inexistent
+
 ## Triton IR
+
+- LLVM-based intermediate representaiton whose purpose is to provide an environment suitable for tile-level program analysis, transformation and optimization
+- constructed directly from Triton-C during parsing
+- shares same high-level structure as LLVM-IR
 
 ### Structure
 
+- modules
+  - basic units of compilation
+  - compiled independently from one other, then aggregated by a linker
+  - composed of functions, global variables, consants and other symbols
+- functions
+  - consists of a return type, name and an arguments list
+  - function attributes and parameter attributes can be specified, allowing compiler backends to perform more aggressive optimization
+- basic blocks
+  - straight line code sequences that may contain terminator instructions at the end
+  - uses Static Single Assignment form
+  - created direct from ASTs
+
 ### Support for Tile-Level Data-Flow Analysis
+
+- types
+  - multi-dimensional tiles are central to data-flow analysis in Titon-IR
+  - uses syntax similar to LLVM-IR
+- instructions
+  - introduces set of retiling instructions for suporting broadcasting semantics
+  - traditional scala instructions are preserverd and extended to signify element-wise operations on tile operands
+  - exposes specialized arithmetic instructions for transpositions and matrix multiplications
+
+### Support for Tile-Level Control-Flow Analysis
+
+- difficult to express the divergent control flow within tiles
+- uses predicate SSA form and psi functions to solve this
+  - needs addition of two instructions classes (cmpp instructions and psi instructions)
 
 ## Triton-JIT Compiler
 
+- simplifies and compiles Triton-IR programs into efficient machine code
+  - uses machine-independent and machine-dependent passes backed by an auto-tuning engine
+
 ### Machine-Independent Passes
+
+- pre-fetching
+  - handling tile-level memory operations inslide loops can be problematic, as could induce severe latency
+  - mitigated by directly detecting loops and adding prefetching code where necessary
+- tile-level peephole optimization
+  - offers new opportunities for peephole optimizers
 
 ### Machine-Dependent Passes
 
+- hierarchical tiling
+  - nested tiling strategies aim at decomposing tiles into micro-tiles, and eventually into nao-tiles to fit the machin's compute capabilities and memory hierarchy as tightly as we can
+  - can automatically enumerate and optimize valid nested tiling configurations
+- memory coalescing
+  - as Triton-IR programs are single-threaded and automatically parallelized, compiler backed orders threads internally within each micro-tile to avoid uncoalesced memory accesses whenever possible
+  - reduces number of memory transactions necessary to load a tile column
+- shared memory allocation
+  - tile-level operations with high arithmetic intensity can benefit from temporarily storing their operands in a fast shared memory
+- shared memory synchronization
+  - reads from and write to shared memory are asyncronous in the model
+  - this automatically inserts barries in the generated GPU source code to preserve pgoram correctness
+  - done by detecting read-after-writes and write-after-read hazards using forward data-flow analysis
+
 ### Auto-tuner
+
+- traditionally, this relies on hand-written parametrized code templates
+- Triton-JIT can extract optimization spaces directly from Triton-IR programs by combining the meta-parameters associated with the previous optimization passes
 
 ## Numerical Experiments
 
+- evaluated on NVIDIA GeForce GTX1070, compared against current vendor libaries (cuBLAS 10.0, cuDNN 7.0), and related compiler technology (Auto-TVM, TC, PlaidML)
+
 ### Matrix Multiplication
+
+- on par with cuBLAS (both achieve >90% of peak performance)
+- existing DSLs are 2-3x slower than Triton
 
 ### Convolutions
 
+- for dense convolutions,
+  - outperforms cuDNN in ResNet, on par with cuDNN on DeepSpeech2
+- for shift convolutions,
+  - hides the cost of shifting, outperforms cuBLAS implementation
+
 ## Conclusion
+
+- Triton is an open-source language and compiler for expressing and compiling tiled neural network computations into efficient machine code
+- adding a few data-flow and contorl-flow extensions to LLVM-IR enables various tile-level optimization passes, leading to performance on par with vendor libraries
+- Triton-C, a higher-level language which implements efficient kernels for novel neural network architectures for CNNs
